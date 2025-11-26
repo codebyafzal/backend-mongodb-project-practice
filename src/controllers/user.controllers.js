@@ -297,7 +297,33 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(ApiResponse(200, user, "AccountDetails updated Successfully!"));
 });
 
-const updateUserAvatar = asyncHandler(async (req, res) => {});
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalpath = req.file?.path;
+
+  if (!avatarLocalpath) {
+    throw new ApiError(400, "File is Required");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalpath);
+
+  if (!avatar.url) {
+    throw new ApiError(500, "Something Went Wrong While Uploading Avatar!");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+});
+
+return res
+  .status(200)
+  .json(new ApiResponse(200, user, "Avatar Updated Successfully!"));
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {});
 
@@ -310,4 +336,5 @@ export {
   changeCurrentPassword,
   getCurrentUser,
   updateAccountDetails,
+  updateUserAvatar,
 };
